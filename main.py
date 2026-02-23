@@ -86,6 +86,9 @@ teleop = KeyboardController()
 state = panda.get_state()
 target_position = state["ee-position"]
 target_quaternion = state['ee-quaternion']
+
+start_position = np.array(state["ee-position"])
+BETA = 10.0
 while True:
     # update the target pose
     action = teleop.get_action()
@@ -96,8 +99,71 @@ while True:
 
     # share autonomy between human and robot
     ### to implement: currently we just execute human action ###
-    target_position = human_position
-    target_quaternion = human_quaternion
+    # what robot should do by understadning the human intentions?
+    # predict human goal
+
+    # distance total / (distance traveled so far + distance to go for goal)
+
+    # predict the humans goal
+    state = panda.get_state()
+    curr_position = np.array(state["ee-position"])
+
+    # get object positions (these are theta1, theta2, theta3)
+
+    
+    # box_position = goals["box_position"]
+    # banana_position = goals["banana_position"]
+    # bottle_position = goals["bottle_position"]
+
+    P = [0, 0, 0]
+    # can use a loop here to iterate through whole code
+    goals = get_object_goals()
+
+    for idx, theta in enumerate(["box_position", "banana_position", "bottle_position"]):
+        theta_position = goals[theta]
+        start_to_goal = np.linalg.norm(start_position - theta_position)
+        curr_to_goal = np.linalg.norm(curr_position - theta_position)
+        start_to_curr = np.linalg.norm(curr_position - start_position)
+        P[idx] = np.exp(BETA * start_to_goal) / (np.exp(BETA * (start_to_curr + curr_to_goal)))
+
+    P = np.array(P)
+    
+    P = P/ np.sum(P)
+
+    #print(P)
+
+    # step 2 : find the robot action a_r
+
+    actions = get_object_actions(curr_position, state["ee-euler"], goals)
+    
+    if P[0] > 0.6:
+        print("i am helping for the: box")
+        robot_position, robot_quaternion = actions["box"]
+    elif P[1] > 0.6:
+        print("i am helping for the : banana")
+        robot_position, robot_quaternion = actions["banana"]
+    elif P[2] > 0.6:
+        print("i am helping for the: bottle")
+        robot_position, robot_quaternion = actions["bottle"]
+
+    else:
+        print("i am confused")
+        robot_position = np.copy(human_position)
+        robot_quaternion = np.copy(human_quaternion)
+    
+
+    # step 3. blend the human action with robot action
+
+    # how to control the alpha?
+    # robot is moving too slow
+
+    ALPHA = 0.1
+
+    if np.linalg.norm(action) < 1e-5: # think of any other logic
+        ALPHA = 1.0
+
+    target_position = (1 - ALPHA) * human_position + ALPHA * robot_position
+    target_quaternion = (1 - ALPHA) * human_quaternion + ALPHA * robot_quaternion
 
     # impose workspace limit
     if target_position[2] < 0.02:

@@ -17,6 +17,7 @@ cd HW3
 python3 -m venv venv
 source venv/bin/activate
 
+conda activate hri
 # Install dependencies
 # If you are using Mac or Conda, modify this line as shown in [HW0](https://github.com/vt-hri/HW0)
 pip install numpy pybullet
