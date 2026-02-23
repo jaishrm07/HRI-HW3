@@ -159,6 +159,7 @@ while True:
 
     # step 3. blend the human action with robot action
 
+    # we can control the manual mode or assitive mode using the toggle buttion '.'
     if not assist_enabled:
         ALPHA = 0.0
     elif np.linalg.norm(action[0:6]) < 1e-5:
