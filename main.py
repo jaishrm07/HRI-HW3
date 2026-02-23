@@ -89,6 +89,9 @@ target_quaternion = state['ee-quaternion']
 
 start_position = np.array(state["ee-position"])
 BETA = 10.0
+assist_enabled = True
+prev_toggle_pressed = False
+
 while True:
     # update the target pose
     action = teleop.get_action()
@@ -96,6 +99,13 @@ while True:
     human_quaternion = p.multiplyTransforms([0, 0, 0], p.getQuaternionFromEuler(action[3:6]),
                                                 [0, 0, 0], target_quaternion)[1]
     human_quaternion = np.array(human_quaternion)
+
+    # activate manual control when you press '.' toggle button
+    toggle_pressed = action[7] > 0
+    if toggle_pressed and not prev_toggle_pressed:
+        assist_enabled = not assist_enabled
+        print(f"assistance {'enabled' if assist_enabled else 'disabled'}")
+    prev_toggle_pressed = toggle_pressed
 
     # share autonomy between human and robot
     ### to implement: currently we just execute human action ###
@@ -136,31 +146,35 @@ while True:
 
     actions = get_object_actions(curr_position, state["ee-euler"], goals)
     
-    if P[0] > 0.6:
-        print("i am helping for the: box")
-        robot_position, robot_quaternion = actions["box"]
-    elif P[1] > 0.6:
-        print("i am helping for the : banana")
-        robot_position, robot_quaternion = actions["banana"]
-    elif P[2] > 0.6:
-        print("i am helping for the: bottle")
-        robot_position, robot_quaternion = actions["bottle"]
-
+    if assist_enabled:
+        if P[0] > 0.6:
+            print("i am helping for the: box")
+            robot_position, robot_quaternion = actions["box"]
+        elif P[1] > 0.6:
+            print("i am helping for the : banana")
+            robot_position, robot_quaternion = actions["banana"]
+        elif P[2] > 0.6:
+            print("i am helping for the: bottle")
+            robot_position, robot_quaternion = actions["bottle"]
+        else:
+            print("i am confused")
+            robot_position = np.copy(human_position)
+            robot_quaternion = np.copy(human_quaternion)
     else:
-        print("i am confused")
         robot_position = np.copy(human_position)
         robot_quaternion = np.copy(human_quaternion)
     
 
     # step 3. blend the human action with robot action
 
-    # how to control the alpha?
-    # robot is moving too slow
-
-    ALPHA = 0.1
-
-    if np.linalg.norm(action) < 1e-5: # think of any other logic
+    if not assist_enabled:
+        ALPHA = 0.0
+    elif np.linalg.norm(action[0:6]) < 1e-5:
         ALPHA = 1.0
+    else:
+        ALPHA = 0.1
+
+
 
     target_position = (1 - ALPHA) * human_position + ALPHA * robot_position
     target_quaternion = (1 - ALPHA) * human_quaternion + ALPHA * robot_quaternion
@@ -177,10 +191,6 @@ while True:
         panda.open_gripper()
     elif action[6] == -1:
         panda.close_gripper()
-
-    # print when "." is pressed
-    if action[7] == +1:
-        print("button pressed")
 
     # step simulation
     p.stepSimulation()
