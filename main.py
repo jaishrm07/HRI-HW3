@@ -39,6 +39,7 @@ def action_to_goal(robot_position, robot_euler, goal_position, goal_rotz):
     rotz_error = goal_rotz - robot_euler[2]
     if np.linalg.norm(position_error) > 0.01:
         position_error = position_error / np.linalg.norm(position_error)
+
     if np.abs(rotz_error) > 0.01:
         rotz_error = rotz_error / np.abs(rotz_error)
     # the gains 0.001 and 0.005 match the default pos_step and rot_step in teleop
@@ -64,11 +65,11 @@ p.resetDebugVisualizerCamera(cameraDistance=1.0,
 urdfRootPath = pybullet_data.getDataPath()
 plane = objects.PyBulletObject("plane.urdf", basePosition=[0, 0, -0.625])
 table = objects.PyBulletObject("table/table.urdf", basePosition=[0.5, 0, -0.625])
-box = objects.YCBObject("003_cracker_box.urdf", basePosition=[0.6, -0.2, 0.09], 
+box = objects.YCBObject("003_cracker_box.urdf", basePosition=[0.65, -0.3, 0.09], 
                                                 baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-banana = objects.YCBObject("011_banana.urdf", basePosition=[0.7, 0.2, 0.025], 
+banana = objects.YCBObject("011_banana.urdf", basePosition=[0.75, 0.3, 0.025], 
                                                 baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-bottle = objects.YCBObject("006_mustard_bottle.urdf", basePosition=[0.5, 0.05, 0.06], 
+bottle = objects.YCBObject("006_mustard_bottle.urdf", basePosition=[0.5, 0.00, 0.06], 
                                                 baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
 
 # load the robot
@@ -112,18 +113,9 @@ while True:
     # what robot should do by understadning the human intentions?
     # predict human goal
 
-    # distance total / (distance traveled so far + distance to go for goal)
-
     # predict the humans goal
     state = panda.get_state()
     curr_position = np.array(state["ee-position"])
-
-    # get object positions (these are theta1, theta2, theta3)
-
-    
-    # box_position = goals["box_position"]
-    # banana_position = goals["banana_position"]
-    # bottle_position = goals["bottle_position"]
 
     P = [0, 0, 0]
     # can use a loop here to iterate through whole code
