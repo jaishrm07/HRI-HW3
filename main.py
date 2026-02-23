@@ -101,24 +101,27 @@ while True:
                                                 [0, 0, 0], target_quaternion)[1]
     human_quaternion = np.array(human_quaternion)
 
+    # shared autonomy between human and robot
+    # robot must predict the human actions/intentions using some kind of probability function
+    # and then robot must take over the control from human
+    # but human must have some option to take the control back from the robot.
+
     # activate manual control when you press '.' toggle button
+
     toggle_pressed = action[7] > 0
     if toggle_pressed and not prev_toggle_pressed:
         assist_enabled = not assist_enabled
         print(f"assistance {'enabled' if assist_enabled else 'disabled'}")
     prev_toggle_pressed = toggle_pressed
 
-    # share autonomy between human and robot
-    ### to implement: currently we just execute human action ###
-    # what robot should do by understadning the human intentions?
-    # predict human goal
-
-    # predict the humans goal
+ 
     state = panda.get_state()
     curr_position = np.array(state["ee-position"])
 
     P = [0, 0, 0]
-    # can use a loop here to iterate through whole code
+
+    # following is the code to predict the Probability of Human Goals/intentions
+    
     goals = get_object_goals()
 
     for idx, theta in enumerate(["box_position", "banana_position", "bottle_position"]):
@@ -132,9 +135,9 @@ while True:
     
     P = P/ np.sum(P)
 
-    #print(P)
 
     # step 2 : find the robot action a_r
+    # using the probability calculated above, we can find the robot actions
 
     actions = get_object_actions(curr_position, state["ee-euler"], goals)
     
